@@ -12,7 +12,7 @@ param (
 $NonAlphaNumChars = Get-Random -Minimum 1 -Maximum ($PasswordLength - 4)
 
 Add-Type -AssemblyName System.Web
-$PassComplexCheck = $false
+$PasswordCheck = $false
 do {
 $NewPassword=[System.Web.Security.Membership]::GeneratePassword($PasswordLength,$NonAlphaNumChars)
 If ( ($NewPassword -cmatch "[A-Z\p{Lu}\s]") `
@@ -21,9 +21,9 @@ If ( ($NewPassword -cmatch "[A-Z\p{Lu}\s]") `
 -and ($NewPassword -match "[^\w]")
 )
 {
-$PassComplexCheck=$True
+$PasswordCheck=$True
 }
-} While ($PassComplexCheck -eq $false)
+} While ($PasswordCheck -eq $false)
 
 if ($AsSecureString -eq $True)
     { return (ConvertTo-SecureString $NewPassword -AsPlainText -Force) }
