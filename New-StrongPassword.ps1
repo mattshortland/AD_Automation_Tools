@@ -12,7 +12,7 @@ New-StrongPassword 15
 New-StrongPassword -PasswordLength 8 -MinNonAlphaNumChars 1
     generates an 8 character random password as plaintext, with at least 1 character not being alpha-numeric
 New-StrongPassword 8 1 -AsSecureString
-    generates an 8 character random password as plaintext, with at least 1 character not being alpha-numeric
+    generates an 8 character random password as a secure string, with at least 1 character not being alpha-numeric
 New-StrongPassword -PasswordLength 12 -AsSecureString
     generates a 12 character random password as a secure string
 New-StrongPassword -PasswordLength 11 -AsObject
