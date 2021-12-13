@@ -1,45 +1,20 @@
-<#
-Examples
-
-New-StrongPassword
-    generates a 24 character random password as plaintext
-New-StrongPassword -AsSecureString
-    generates a 24 character random password as a secure string
-New-StrongPassword -PasswordLength 15
-    generates a 15 character random password as plaintext
-New-StrongPassword 15
-    generates a 15 character random password as plaintext 
-New-StrongPassword -PasswordLength 8 -MinNonAlphaNumChars 1
-    generates an 8 character random password as plaintext, with at least 1 character not being alpha-numeric
-New-StrongPassword 8 1 -AsSecureString
-    generates an 8 character random password as a secure string, with at least 1 character not being alpha-numeric
-New-StrongPassword -PasswordLength 12 -AsSecureString
-    generates a 12 character random password as a secure string
-New-StrongPassword -PasswordLength 11 -AsObject
-    generates a 12 character random password as a PSCustomObject, with $_.text being the plaintext and $_.password being the secure string
-$userpassword = New-StrongPassword -PasswordLength 16 -AsObject
-Set-ADAccountPassword -Identity $username -NewPassword $userpassword.password
-write-host "User $username has the password $($userpassword.text)"
-    Here we show using the secure string property for the password change, and the plaintext property being used to output to the screen
-
-#>
-
 Function New-StrongPassword {
     [CmdletBinding(DefaultParameterSetName='AsText')]
 
 
 param (
-[Parameter(Mandatory=$false,Position=0)][validatescript({<#Minimum 8 Characters for Passwords#> $_ -ge 8})][int]$PasswordLength=24,
-[Parameter (Mandatory=$false,Position=1)][validatescript({<#Minimum 1 Non AlphaNumeric Character for Passwords#> $_ -ge 1})][int]$MinNonAlphaNumChars,
+[Parameter(Mandatory=$false,Position=0)][validatescript({$_ -ge 8 -and $_ -lt 129})][int]$PasswordLength=24,
+[Parameter (Mandatory=$false,Position=1)][validatescript({$_ -ge 1 -and $_ -le 40})][int]$MinNonAlphaNumChars,
 [Parameter (Mandatory=$false,Position=2,ParameterSetName='AsText')][switch]$AsText,
 [Parameter (Mandatory=$false,ParameterSetName='AsSecureString')][switch]$AsSecureString,
 [Parameter (Mandatory=$false,ParameterSetName='AsObject')][switch]$AsObject
 )
 
+
 If ($MinNonAlphaNumChars -eq $null)
-    {$MinNonAlphaNumChars = (Get-Random -Minimum 1 -Maximum ($PasswordLength - 4))}
-If ($MinNonAlphaNumChars -ge $PasswordLength)
-    {$MinNonAlphaNumChars = ($PasswordLength - 4)}
+    {$MinNonAlphaNumChars = (Get-Random -Minimum 1 -Maximum ([Math]::Round(($PasswordLength - 0.5) / 2 )))}
+If ($MinNonAlphaNumChars -ge ( $PasswordLength -2 ))
+    {$MinNonAlphaNumChars = ([Math]::Round( 2 * ($PasswordLength - 0.33) / 3 ))}
 
 Add-Type -AssemblyName System.Web
 $PassComplexCheck = $false
@@ -48,7 +23,8 @@ $NewPassword=[System.Web.Security.Membership]::GeneratePassword($PasswordLength,
 If ( ($NewPassword -cmatch "[A-Z\p{Lu}\s]") `
 -and ($NewPassword -cmatch "[a-z\p{Ll}\s]") `
 -and ($NewPassword -match "[\d]") `
--and ($NewPassword -match "[^\w]")
+-and ($NewPassword -match "[^\w]") `
+-and ($NewPassword -notmatch "[\!\@\#\$\%\^\+]")
 )
 {
 $PassComplexCheck=$True
@@ -65,4 +41,99 @@ elseif ($AsObject -eq $true)
        return $PasswordObject
     }
 else { return ($NewPassword)}
+
+<#
+
+.SYNOPSIS
+
+Creates A Strong Password.
+
+.DESCRIPTION
+
+Creates a strong password, defaults to 24 characters.  Can output the password as plaintext, secure string or an object containing both
+
+.PARAMETER  AsText
+
+Outputs the password as plain text (Default Behaviour)
+
+.PARAMETER  AsSecureString
+
+Outputs the password as secure string
+
+.PARAMETER  AsObject
+
+Outputs the password as an object, with the object property "text" being plaintext and "password" being a secure string
+
+.PARAMETER  PasswordLength
+
+Sets the Desired Password Length, with 8 being the minimum and 128 being the maximum
+
+
+.PARAMETER  MinNonAlphaNumChars
+
+Sets the minimum number of non-alphanumeric characters in the password, with 2 being the minimum and the smaller of 40 or two thirds of the total password length being the maximum. Omitting this parameter will choose a random number for this value
+
+.INPUTS
+
+None. You cannot pipe objects to New-StrongPassword.
+
+.OUTPUTS
+
+By default System.String. New-StrongPassword returns a string with the password
+If you use the -AsSecureString flag it will output as a secure string
+If you use the -AsObject flag it will output as an object containing two properties, .text (the plaintext) and .password (the secure string)
+
+.EXAMPLE
+
+PS> New-StrongPassword
+DQKZdkOobAWXE>EE7;J5y>A&
+
+.EXAMPLE
+
+PS> New-StrongPassword -AsSecureString
+System.Security.SecureString
+
+.EXAMPLE
+
+PS> New-StrongPassword -PasswordLength 15
+EHEUFtpt16-bmag
+
+.EXAMPLE
+
+PS> New-StrongPassword -PasswordLength 12 -MinNonAlphaNumChars 8
+2_[l:-=h_}}C
+
+.EXAMPLE
+
+PS> New-StrongPassword -PasswordLength 8 -MinNonAlphaNumChars 1
+jRf5Lo>C
+
+.EXAMPLE
+
+PS> New-StrongPassword -PasswordLength 11 -AsObject
+
+Text                            Password
+----                            --------
+mmLy5A;&CVN System.Security.SecureString
+
+.EXAMPLE
+
+PS> $username = Get-ADUser "Matt"
+PS> $userpassword = New-StrongPassword -PasswordLength 16 -AsObject
+PS> Set-ADAccountPassword -Identity $username -NewPassword $userpassword.password
+PS> write-host "User $username has the password $($userpassword.text)"
+
+User Matt has the password HMmY18kz8oHBs]sx
+
+.NOTES
+
+Written by Matt Shortland
+https://github.com/mattshortland/AD_Automation_Tools
+
+#>
+
+
 }
+
+
+
