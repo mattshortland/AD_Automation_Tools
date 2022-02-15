@@ -7,7 +7,7 @@ param (
 [Parameter(Mandatory=$true,Position=1,ParameterSetName='Copy')][switch]$copy,
 [Parameter(Mandatory=$true,Position=1,ParameterSetName='ReplaceSource')][switch]$replaceSource,
 [Parameter(Mandatory=$true,Position=2,ParameterSetName='Copy')][string]$newGroupName,
-[Parameter (Mandatory=$false,Position=2)][switch]$includeGroups
+[Parameter (Mandatory=$false,Position=3)][switch]$includeGroups
 )
 
 $newGroupMembers = Get-NestedADGroupMembership $SourceGroup -AsObject
