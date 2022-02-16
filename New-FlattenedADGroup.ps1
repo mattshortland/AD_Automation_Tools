@@ -1,9 +1,10 @@
+           
 function  New-FlattenedADGroup {
 
 param (
 [Parameter(Mandatory=$true,Position=0)][validatescript({get-ADGroup $_})][String]$sourceGroup,
 [Parameter(Mandatory=$true,Position=1,ParameterSetName='newGroupName')][string]$newGroupName,
-[Parameter(Mandatory=$true,Position=2,ParameterSetName='newGroupName')][switch]$Force,
+[Parameter(Mandatory=$false,Position=2,ParameterSetName='newGroupName')][switch]$Force,
 [Parameter(Mandatory=$true,Position=1,ParameterSetName='ReplaceSource')][switch]$replaceSource,
 [Parameter (Mandatory=$false,Position=3)][switch]$includeGroups
 )
@@ -12,12 +13,14 @@ $newGroupMembers = Get-NestedADGroupMembership $SourceGroup -AsObject
 
 if ($newGroupName -ne $null)
     {
-        if ($force -ne $true)
-            {
-            if (Get-ADGroup $newGroupName -erroraction ignore) { Write-Error "the group $newGroupName already exists, use the -Force parameter to replace or choose a new group name" `return}
-            }
         $oldgroup = Get-ADGroup $SourceGroup -Properties *
-        New-ADGroup -SamAccountName "$newGroupName" -Name "$newGroupName" -GroupCategory $oldgroup.GroupCategory -GroupScope $oldgroup.GroupScope -Path ($oldgroup.DistinguishedName -split "$($oldgroup.SamAccountName)," | Select-Object -Last 1)
+        Try { New-ADGroup -SamAccountName "$newGroupName" -Name "$newGroupName" -GroupCategory $oldgroup.GroupCategory -GroupScope $oldgroup.GroupScope -Path ($oldgroup.DistinguishedName -split "$($oldgroup.SamAccountName)," | Select-Object -Last 1) -ErrorAction Ignore}
+        Catch { if ($Force -ne $true)  
+                { 
+                    Write-Error "the group $newGroupName already exists, use the -Force parameter to replace or choose a new group name" 
+                    return
+                }
+            }
     }
 
 if ($replaceSource -eq $true)
